@@ -145,6 +145,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/3rd/glm
     ${CMAKE_CURRENT_SOURCE_DIR}/3rd/glfw-3.3/include
     ${CMAKE_CURRENT_SOURCE_DIR}/3rd/glad/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rd/stb
 )
 
 link_directories(
