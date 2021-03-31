@@ -3,33 +3,9 @@
 #include "render/renderer.h"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
-#include "render/shader.h"
-#include "render/render_object.h"
+#include "camera.h"
 
 Engine* Singleton<Engine>::singleton = nullptr;
-
-const char *vertex_shader_source =
-	"#version 330 core\n"
-	"layout (location = 0) in vec3 vPos;\n"
-	"layout (location = 1) in vec3 vColor;\n"
-	"out vec3 fColor;\n"
-	"void main()\n"
-	"{\n"
-	"   gl_Position = vec4(vPos.x, vPos.y, vPos.z, 1.0);\n"
-	"   fColor = vColor;\n"
-	"}\0";
-
-const char *fragment_shader_source =
-	"#version 330 core\n"
-	"uniform float time;"
-	"in vec3 fColor;\n"
-	"out vec4 FragColor;\n"
-	"void main()\n"
-	"{\n"
-	"    vec3 green = vec3(0.5f, (sin(time) / 2.0f + 1.0f), 0.5f);\n"
-	"   FragColor = vec4(fColor * green, 1.0f);\n"
-	"}\n\0";
-
 
 bool Engine::startup()
 {
@@ -57,75 +33,24 @@ bool Engine::startup()
 		return false;
 	}
 
+	int width, height;
+	glfwGetFramebufferSize(_window, &width, &height);
+	const Vector3 pos(0.0f, 0.0f, 8.0f);
+	const Vector3 forward(0.0f, 0.0f, -1.0f);
+	_camera = new Camera(45.0f, (float)width / (float)height, 0.5f, 100.0f, pos, forward);
+
 	glfwSetFramebufferSizeCallback(_window, framebuffer_size_callback);
+	glfwSetCursorPosCallback(_window, mouse_move_callback);
+	glfwSetScrollCallback(_window, mouse_scroll_callback);
+	glEnable(GL_DEPTH_TEST);
+	// glEnable(GL_CULL_FACE);
+	_last_frame_time = get_time();
 
-	ShaderObject vs(ShaderObject::Type::Vertex, vertex_shader_source);
-	if (!vs.valid())
-	{
-		std::cout << "Create vertex shader failed:" << vs.get_compile_log() << std::endl;
-		glfwTerminate();
-		return false;
-	}
-	ShaderObject fs(ShaderObject::Type::Fragment, fragment_shader_source);
-	if (!fs.valid())
-	{
-		std::cout << "Create fragment shader failed:" << fs.get_compile_log() << std::endl;
-		glfwTerminate();
-		return false;
-	}
-	std::vector<const ShaderObject*> shaders;
-	shaders.resize(2);
-	shaders[(int)ShaderObject::Type::Vertex] = &vs;
-	shaders[(int)ShaderObject::Type::Fragment] = &fs;
-	_shader = new ShaderProgram(shaders);
-	if (!_shader->valid())
-	{
-		std::cout << "Create shader program failed:" << _shader->get_link_log() << std::endl;
-		delete _shader;
-		glfwTerminate();
-		return false;
-	}
-
-	/*
-	float vertices[] =
-	{
-		 0.5f,  0.5f, 0.0f,  // top right
-		 0.5f, -0.5f, 0.0f,  // bottom right
-		-0.5f, -0.5f, 0.0f,  // bottom left
-		-0.5f,  0.5f, 0.0f   // top left 
-	};
-	*/
-	float vertices[] =
-	{
-		// x      y     z     r     g     b
-		-0.4f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  // top
-		-0.9f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // left1
-		 0.1f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,  // right1
-		-0.1f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  // left2
-		 0.9f,  0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // right2
-		 0.4f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f   // bottom
-	};
-	unsigned int indices[] =
-	{
-		0, 1, 3,  // first Triangle
-		1, 2, 3   // second Triangle
-	};
-	RenderObject::VertexFormat vf;
-	vf.push_back({ 3, RenderObject::VertexAttr::ElementType::Float, false });
-	vf.push_back({ 3, RenderObject::VertexAttr::ElementType::Float, false });
-	RenderObject* ro = new RenderObject(vf, vertices, 6, nullptr, 0);
-	_render_objects.push_back(ro);
-	
 	return true;
 }
 
 void Engine::shutdown()
 {
-	delete _shader;
-	for (auto ro : _render_objects)
-	{
-		delete ro;
-	}
 	glfwTerminate();
 }
 
@@ -135,34 +60,83 @@ void Engine::run()
 	
 	while (!_should_shutdown && !glfwWindowShouldClose(_window))
 	{
-		process_input();
+		const float time = get_time();
+		const float delta = time - _last_frame_time;
+		_last_frame_time = time;
 
-		renderer.begin_frame(0.0f);
+		process_input(delta);
 
-		_shader->bind();
-		_shader->set_float("time", (float)glfwGetTime());
-		for (auto ro : _render_objects)
-		{
-			ro->render();
-		}
-		_shader->unbind();
-		
-		renderer.end_frame(true);
-		
+		renderer.draw(delta);
+
 		glfwSwapBuffers(_window);
 		glfwPollEvents();
 	}
 }
 
-void Engine::framebuffer_size_callback(GLFWwindow* window, int width, int height)
+float Engine::get_time() const
 {
-	glViewport(0, 0, width, height);
+	return glfwGetTime();
 }
 
-void Engine::process_input()
+void Engine::framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+	Engine::get_singleton().on_framebuffer_sized(width, height);
+}
+
+void Engine::mouse_move_callback(GLFWwindow* window, double x, double y)
+{
+	Engine::get_singleton().on_mouse_moved(Vector2((float)x, (float)y));
+}
+
+void Engine::mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	Engine::get_singleton().on_mouse_scrolled((float)yoffset);
+}
+
+void Engine::on_framebuffer_sized(int width, int height)
+{
+	glViewport(0, 0, width, height);
+	_camera->set_aspect((float)width / (float)height);
+}
+
+void Engine::on_mouse_moved(Vector2 position)
+{
+	if (!_mouse_moved)
+	{
+		_last_mouse_position = position;
+		_mouse_moved = true;
+		return;
+	}
+	const Vector2 offset = (position - _last_mouse_position) * 0.1f;
+	_last_mouse_position = position;
+
+	if (glfwGetMouseButton(_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+	{
+		_camera->rotate(offset.x, -offset.y); // reversed since y-coordinates go from bottom to top
+	}
+}
+
+void Engine::on_mouse_scrolled(float offset)
+{
+	_camera->set_fov(_camera->get_fov() - offset);
+}
+
+void Engine::process_input(float delta)
 {
 	if (glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(_window, true);
 	}
+
+	const float camera_speed = 0.05f; // adjust accordingly
+	const Vector3 forward = glm::normalize(_camera->get_forward());
+	const Vector3 right = glm::normalize(glm::cross(_camera->get_forward(), _camera->get_up()));
+	if (glfwGetKey(_window, GLFW_KEY_W) == GLFW_PRESS)
+		_camera->move(camera_speed * forward);
+	if (glfwGetKey(_window, GLFW_KEY_S) == GLFW_PRESS)
+		_camera->move(-camera_speed * forward);
+	if (glfwGetKey(_window, GLFW_KEY_A) == GLFW_PRESS)
+		_camera->move(-camera_speed * right);
+	if (glfwGetKey(_window, GLFW_KEY_D) == GLFW_PRESS)
+		_camera->move(camera_speed * right);
 }

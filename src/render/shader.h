@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include "math/math.h"
 
 class ShaderObject final
 {
@@ -46,7 +47,16 @@ public:
 	void set_bool(const std::string& name, bool value) const;
 	void set_int(const std::string& name, int value) const;
 	void set_float(const std::string& name, float value) const;
-	
+
+	void set_vector2(const std::string& name, const Vector2& value) const;
+	void set_vector3(const std::string& name, const Vector3& value) const;
+	void set_vector4(const std::string& name, const Vector4& value) const;
+	void set_vector3(const std::string& name, float x, float y, float z) const;
+	void set_vector4(const std::string& name, float x, float y, float z, float w) const;
+
+	void set_matrix3(const std::string& name, const Matrix3& value) const;
+	void set_matrix4(const std::string& name, const Matrix4& value) const;
+
 	void bind() const;
 	void unbind() const;
 

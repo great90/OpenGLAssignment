@@ -1,6 +1,10 @@
 #include "render_object.h"
 #include "glad/glad.h"
 #include <cassert>
+#include "engine/engine.h"
+#include "texture.h"
+#include "shader.h"
+#include "engine/camera.h"
 
 RenderObject::RenderObject(const VertexFormat& vertex_format, const void* vertex_data, size_t vertex_count, const unsigned* indices, size_t index_count)
 {
@@ -71,6 +75,20 @@ RenderObject::~RenderObject()
 
 void RenderObject::render() const
 {
+	Engine& engine = Engine::get_singleton();
+	Camera* camera = engine.get_camera();
+	
+	glActiveTexture(GL_TEXTURE0);
+	_texture->active();
+
+	_shader->bind();
+	_shader->set_int("tex", 0);
+	_shader->set_matrix4("projection", camera->get_projection_matrix());
+	_shader->set_matrix4("view", camera->get_view_matrix());
+	auto model = get_model_matrix();
+	model = glm::rotate(model, glm::radians(engine.get_time() * 30), glm::vec3(1.0f, 0.3f, 0.5f));
+	_shader->set_matrix4("model", model);
+	
 	glBindVertexArray(_vao);
 	if (_index_count > 0)
 	{
@@ -80,4 +98,6 @@ void RenderObject::render() const
 	{
 		glDrawArrays(GL_TRIANGLES, 0, _vertex_count);
 	}
+
+	_shader->unbind();
 }

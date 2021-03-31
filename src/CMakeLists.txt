@@ -8,7 +8,7 @@ GROUP_FILES(ALL_CODE_FILES)
 
 add_executable(${TARGET_NAME} ${ALL_CODE_FILES})
 
-set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
 # append the _d (or whatever) for debug builds as needed.
 if(HAS_BUILD_SUFFIX AND BUILD_SUFFIX)
