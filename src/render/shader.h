@@ -39,9 +39,10 @@ class ShaderProgram final
 {
 public:
 	ShaderProgram(const std::vector<const ShaderObject*>& shaders);
+	ShaderProgram(const std::string& vs_path, const std::string& fs_path);
 	~ShaderProgram();
 
-	const std::string& get_link_log() const { return _link_log; }
+	const std::string& get_error_log() const { return _error_log; }
 	bool valid() const { return _valid; }
 
 	void set_bool(const std::string& name, bool value) const;
@@ -60,8 +61,11 @@ public:
 	void bind() const;
 	void unbind() const;
 
+protected:
+	unsigned int load_shader_file(ShaderObject::Type type, const std::string& path, std::string& error_log) const;
+
 private:
 	unsigned int _id;
-	std::string _link_log;
+	std::string _error_log;
 	bool _valid;
 };

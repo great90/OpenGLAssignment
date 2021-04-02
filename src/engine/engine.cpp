@@ -129,8 +129,9 @@ void Engine::process_input(float delta)
 	}
 
 	const float camera_speed = 0.05f; // adjust accordingly
-	const Vector3 forward = glm::normalize(_camera->get_forward());
-	const Vector3 right = glm::normalize(glm::cross(_camera->get_forward(), _camera->get_up()));
+	const Vector3& forward = _camera->get_forward(); // already normalized
+	const Vector3& up = _camera->get_up();	// already normalized
+	const Vector3 right = glm::normalize(glm::cross(forward, up));
 	if (glfwGetKey(_window, GLFW_KEY_W) == GLFW_PRESS)
 		_camera->move(camera_speed * forward);
 	if (glfwGetKey(_window, GLFW_KEY_S) == GLFW_PRESS)
@@ -139,4 +140,8 @@ void Engine::process_input(float delta)
 		_camera->move(-camera_speed * right);
 	if (glfwGetKey(_window, GLFW_KEY_D) == GLFW_PRESS)
 		_camera->move(camera_speed * right);
+	if (glfwGetKey(_window, GLFW_KEY_Q) == GLFW_PRESS)
+		_camera->move(camera_speed * up);
+	if (glfwGetKey(_window, GLFW_KEY_E) == GLFW_PRESS)
+		_camera->move(-camera_speed * up);
 }

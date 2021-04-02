@@ -1,6 +1,8 @@
 ﻿#include "shader.h"
 #include "glad/glad.h"
 #include <cassert>
+#include <fstream>
+#include <sstream>
 
 ShaderObject::ShaderObject(Type type, std::string source)
 {
@@ -60,13 +62,48 @@ ShaderProgram::ShaderProgram(const std::vector<const ShaderObject*>& shaders)
 	glGetProgramiv(_id, GL_LINK_STATUS, &success);
 	if (!success)
 	{
-		_link_log.resize(512);
-		glGetProgramInfoLog(_id, _link_log.capacity(), NULL, &_link_log[0]);
+		_error_log.resize(512);
+		glGetProgramInfoLog(_id, _error_log.capacity(), NULL, &_error_log[0]);
 		_valid = false;
 	}
 	else
 	{
-		_link_log = "";
+		_error_log = "";
+		_valid = true;
+	}
+}
+
+ShaderProgram::ShaderProgram(const std::string& vertex_path, const std::string& fragment_path)
+{
+	_id = glCreateProgram();
+
+	const unsigned int vs = load_shader_file(ShaderObject::Type::Vertex, vertex_path, _error_log);
+	if (vs == 0)
+	{
+		_valid = false;
+		return;
+	}
+	const unsigned int fs = load_shader_file(ShaderObject::Type::Fragment, fragment_path, _error_log);
+	if (fs == 0)
+	{
+		_valid = false;
+		return;
+	}
+	glAttachShader(_id, vs);
+	glAttachShader(_id, fs);
+	glLinkProgram(_id);
+
+	int success = 0;
+	glGetProgramiv(_id, GL_LINK_STATUS, &success);
+	if (!success)
+	{
+		_error_log.resize(512);
+		glGetProgramInfoLog(_id, _error_log.capacity(), NULL, &_error_log[0]);
+		_valid = false;
+	}
+	else
+	{
+		_error_log = "";
 		_valid = true;
 	}
 }
@@ -134,4 +171,53 @@ void ShaderProgram::bind() const
 void ShaderProgram::unbind() const
 {
 	glUseProgram(0);
+}
+
+unsigned int ShaderProgram::load_shader_file(ShaderObject::Type type, const std::string& path, std::string& error_log) const
+{
+	unsigned int id = 0;
+	switch (type)
+	{
+	case ShaderObject::Type::Vertex:
+		id = glCreateShader(GL_VERTEX_SHADER);
+		break;
+	case ShaderObject::Type::Fragment:
+		id = glCreateShader(GL_FRAGMENT_SHADER);
+		break;
+	default:
+		assert(false);
+		return 0;
+	}
+
+	std::string source;
+	std::ifstream stream;
+	stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+	try
+	{
+		stream.open(path);
+		std::stringstream ss;
+		ss << stream.rdbuf();
+		stream.close();
+		source = ss.str();
+	}
+	catch (std::ifstream::failure& e)
+	{
+		error_log = "read file '" + path + "' failed!";
+		return 0;
+	}
+
+	const char* src = source.c_str();
+	glShaderSource(id, 1, &src, NULL);
+	glCompileShader(id);
+
+	int success = 0;
+	glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+	if (!success)
+	{
+		error_log.resize(512);
+		glGetShaderInfoLog(id, error_log.capacity(), NULL, &error_log[0]);
+		return 0;
+	}
+	return id;
 }

@@ -5,35 +5,6 @@
 #include "render/render_object.h"
 #include "render/texture.h"
 
-const char *vertex_shader_source =
-	"#version 330 core\n"
-	"layout (location = 0) in vec3 vPos;\n"
-	"layout (location = 1) in vec3 vColor;\n"
-	"layout (location = 2) in vec2 vUV;\n"
-	"uniform mat4 projection;"
-	"uniform mat4 view;"
-	"uniform mat4 model;"
-	"out vec3 fColor;\n"
-	"out vec2 fUV;\n"
-	"void main()\n"
-	"{\n"
-	"   gl_Position = projection * view * model * vec4(vPos, 1.0);\n"
-	"   fColor = vColor;\n"
-	"	fUV = vUV;\n"
-	"}\0";
-
-const char *fragment_shader_source =
-	"#version 330 core\n"
-	"uniform sampler2D tex;"
-	"in vec3 fColor;\n"
-	"in vec2 fUV;\n"
-	"out vec4 FragColor;\n"
-	"void main()\n"
-	"{\n"
-	"    FragColor = texture(tex, fUV) * vec4(fColor, 1.0f);\n"
-	"}\n\0";
-
-
 int main()
 {
 	std::shared_ptr<Engine> engine = std::make_shared<Engine>();
@@ -48,26 +19,10 @@ int main()
 		return -1;
 	}
 
-	ShaderObject vs(ShaderObject::Type::Vertex, vertex_shader_source);
-	if (!vs.valid())
-	{
-		std::cout << "Create vertex shader failed:" << vs.get_compile_log() << std::endl;
-		return -1;
-	}
-	ShaderObject fs(ShaderObject::Type::Fragment, fragment_shader_source);
-	if (!fs.valid())
-	{
-		std::cout << "Create fragment shader failed:" << fs.get_compile_log() << std::endl;
-		return -1;
-	}
-	std::vector<const ShaderObject*> shaders;
-	shaders.resize(2);
-	shaders[(int)ShaderObject::Type::Vertex] = &vs;
-	shaders[(int)ShaderObject::Type::Fragment] = &fs;
-	ShaderProgram shader(shaders);
+	ShaderProgram shader("src/shader/vertex.shader", "src/shader/fragment.shader");
 	if (!shader.valid())
 	{
-		std::cout << "Create shader program failed:" << shader.get_link_log() << std::endl;
+		std::cout << "Create shader program failed:" << shader.get_error_log() << std::endl;
 		return -1;
 	}
 
