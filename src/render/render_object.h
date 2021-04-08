@@ -30,8 +30,10 @@ public:
 	
 	ShaderProgram* get_shader() const { return _shader; }
 	void set_shader(ShaderProgram* shader) { _shader = shader; }
-	Texture* get_texture() const { return _texture; }
-	void set_texture(Texture* texture) { _texture = texture; }
+	Texture* get_diffuse_texture() const { return _diffuse_texture; }
+	void set_diffuse_texture(Texture* texture) { _diffuse_texture = texture; }
+	Texture* get_specular_texture() const { return _specular_texture; }
+	void set_specular_texture(Texture* texture) { _specular_texture = texture; }
 	const Vector3& get_position() const { return _position; }
 	void set_position(const Vector3& position) { _position = position; }
 	const Vector3& get_rotation() const { return _rotation; }
@@ -50,7 +52,8 @@ private:
 	size_t _index_count{ 0 };
 
 	ShaderProgram* _shader{ nullptr };
-	Texture* _texture{ nullptr };
+	Texture* _diffuse_texture{ nullptr };
+	Texture* _specular_texture{ nullptr };
 	Vector3 _position{ 0.0f, 0.0f, 0.0f };
 	Vector3 _rotation{ 0.0f, 0.0f, 0.0f };
 	Vector3 _scale{ 1.0f, 1.0f, 1.0f };

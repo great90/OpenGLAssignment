@@ -53,8 +53,13 @@ RenderObject* init_light()
 
 bool init_boxes(RenderObject* light)
 {
-	static Texture texture;
-	if (!texture.load("asset/container.jpg"))
+	static Texture diffuse_texture;
+	if (!diffuse_texture.load("asset/container2.png"))
+	{
+		return false;
+	}
+	static Texture specular_texture;
+	if (!specular_texture.load("asset/container2_specular.png"))
 	{
 		return false;
 	}
@@ -131,7 +136,8 @@ bool init_boxes(RenderObject* light)
 		RenderObject* object = Renderer::get_singleton().add_renderable(vf, vertices, 24, indices, sizeof(indices) / sizeof(indices[0]));
 		object->set_position(box_position);
 		object->set_rotation(Vector3(20.0f, -20.0f, -10.0f));
-		object->set_texture(&texture);
+		object->set_diffuse_texture(&diffuse_texture);
+		object->set_specular_texture(&specular_texture);
 		object->set_shader(&shader);
 
 		object->set_light(light);

@@ -80,36 +80,26 @@ void RenderObject::render() const
 	Engine& engine = Engine::get_singleton();
 	Camera* camera = engine.get_camera();
 
-	if (_texture)
+	if (_diffuse_texture)
 	{
 		glActiveTexture(GL_TEXTURE0);
-		_texture->active();
-	}
-	
-	_shader->bind();
-	if (_texture)	// TODO
+		_diffuse_texture->active();
+		_shader->set_int("material.diffuse", 0);
+	}	
+	if (_specular_texture)	// TODO
 	{
-		_shader->set_int("tex", 0);
-		_shader->set_vector3("material.ambient", 1.0f, 0.5f, 0.31f);
-		_shader->set_vector3("material.diffuse", 1.0f, 0.5f, 0.31f);
-		_shader->set_vector3("material.specular", 0.5f, 0.5f, 0.5f); // specular lighting doesn't have full effect on this object's material
-		_shader->set_float("material.shininess", 64.0f);
-
+		glActiveTexture(GL_TEXTURE1);
+		_specular_texture->active();
+		_shader->set_int("material.specular", 1);
+		_shader->set_float("material.shininess", 8.0f);
 	}
 
+	_shader->bind();
 	if (_light)
 	{
-		const auto time = engine.get_time();
-		glm::vec3 lightColor;
-		lightColor.x = sin(time * 2.0f);
-		lightColor.y = sin(time * 0.7f);
-		lightColor.z = sin(time * 1.3f);
-		const Vector3 diffuseColor = lightColor * Vector3(0.9f); // decrease the influence
-		const Vector3 ambientColor = diffuseColor * Vector3(0.9f); // low influence
-		
 		_shader->set_vector3("light.position", _light->get_position());
-		_shader->set_vector3("light.ambient", ambientColor);
-		_shader->set_vector3("light.diffuse", diffuseColor);
+		_shader->set_vector3("light.ambient", 0.6f, 0.6f, 0.6f);
+		_shader->set_vector3("light.diffuse", 0.8f, 0.8f, 0.8f);
 		_shader->set_vector3("light.specular", 1.0f, 1.0f, 1.0f);
 	}
 	_shader->set_vector3("viewPos", camera->get_position());
