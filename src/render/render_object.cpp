@@ -90,15 +90,29 @@ void RenderObject::render() const
 	if (_texture)	// TODO
 	{
 		_shader->set_int("tex", 0);
-		_shader->set_vector3("objectColor", 1.0f, 0.5f, 0.31f);
+		_shader->set_vector3("material.ambient", 1.0f, 0.5f, 0.31f);
+		_shader->set_vector3("material.diffuse", 1.0f, 0.5f, 0.31f);
+		_shader->set_vector3("material.specular", 0.5f, 0.5f, 0.5f); // specular lighting doesn't have full effect on this object's material
+		_shader->set_float("material.shininess", 64.0f);
+
 	}
 
 	if (_light)
 	{
-		_shader->set_vector3("lightColor", 1.0f, 1.0f, 1.0f);
-		_shader->set_vector3("lightPos", _light->get_position());
-		_shader->set_vector3("viewPos", Engine::get_singleton().get_camera()->get_position());
+		const auto time = engine.get_time();
+		glm::vec3 lightColor;
+		lightColor.x = sin(time * 2.0f);
+		lightColor.y = sin(time * 0.7f);
+		lightColor.z = sin(time * 1.3f);
+		const Vector3 diffuseColor = lightColor * Vector3(0.9f); // decrease the influence
+		const Vector3 ambientColor = diffuseColor * Vector3(0.9f); // low influence
+		
+		_shader->set_vector3("light.position", _light->get_position());
+		_shader->set_vector3("light.ambient", ambientColor);
+		_shader->set_vector3("light.diffuse", diffuseColor);
+		_shader->set_vector3("light.specular", 1.0f, 1.0f, 1.0f);
 	}
+	_shader->set_vector3("viewPos", camera->get_position());
 	_shader->set_matrix4("projection", camera->get_projection_matrix());
 	_shader->set_matrix4("view", camera->get_view_matrix());
 	auto model = get_model_matrix();
