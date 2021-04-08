@@ -8,3 +8,4 @@ typedef glm::vec4 Vector4;
 
 typedef glm::mat3x3 Matrix3;
 typedef glm::mat4x4 Matrix4;
+typedef glm::qua<float> Quaternion;

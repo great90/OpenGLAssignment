@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include <vector>
 #include "math/math.h"
-#include <glm/ext/matrix_transform.inl>
 
 class ShaderProgram;
 class Texture;
@@ -27,7 +26,7 @@ public:
 
 	void render() const;
 
-	Matrix4 get_model_matrix() const { return glm::translate(glm::mat4(1.0f), _position); }
+	Matrix4 get_model_matrix() const;
 	
 	ShaderProgram* get_shader() const { return _shader; }
 	void set_shader(ShaderProgram* shader) { _shader = shader; }
@@ -35,15 +34,26 @@ public:
 	void set_texture(Texture* texture) { _texture = texture; }
 	const Vector3& get_position() const { return _position; }
 	void set_position(const Vector3& position) { _position = position; }
-	
-private:
-	unsigned int _vao;
-	unsigned int _vbo;
-	unsigned int _ebo;
-	size_t _vertex_count;
-	size_t _index_count;
+	const Vector3& get_rotation() const { return _rotation; }
+	void set_rotation(const Vector3& rotation) { _rotation = rotation; }
+	const Vector3& get_scale() const { return _scale; }
+	void set_scale(const Vector3& scale) { _scale = scale; }
 
-	ShaderProgram* _shader;
-	Texture* _texture;
-	Vector3 _position;
+	RenderObject* get_light() const { return _light; }
+	void set_light(RenderObject* light) { _light = light; }
+
+private:
+	unsigned int _vao{ 0 };
+	unsigned int _vbo{ 0 };
+	unsigned int _ebo{ 0 };
+	size_t _vertex_count{ 0 };
+	size_t _index_count{ 0 };
+
+	ShaderProgram* _shader{ nullptr };
+	Texture* _texture{ nullptr };
+	Vector3 _position{ 0.0f, 0.0f, 0.0f };
+	Vector3 _rotation{ 0.0f, 0.0f, 0.0f };
+	Vector3 _scale{ 1.0f, 1.0f, 1.0f };
+
+	RenderObject* _light{ nullptr };
 };

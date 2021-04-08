@@ -1,10 +1,12 @@
-#include "render_object.h"
+﻿#include "render_object.h"
 #include "glad/glad.h"
 #include <cassert>
 #include "engine/engine.h"
 #include "texture.h"
 #include "shader.h"
 #include "engine/camera.h"
+#include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
+#include <glm/gtc/quaternion.hpp>
 
 RenderObject::RenderObject(const VertexFormat& vertex_format, const void* vertex_data, size_t vertex_count, const unsigned* indices, size_t index_count)
 {
@@ -77,16 +79,30 @@ void RenderObject::render() const
 {
 	Engine& engine = Engine::get_singleton();
 	Camera* camera = engine.get_camera();
-	
-	glActiveTexture(GL_TEXTURE0);
-	_texture->active();
 
+	if (_texture)
+	{
+		glActiveTexture(GL_TEXTURE0);
+		_texture->active();
+	}
+	
 	_shader->bind();
-	_shader->set_int("tex", 0);
+	if (_texture)	// TODO
+	{
+		_shader->set_int("tex", 0);
+		_shader->set_vector3("objectColor", 1.0f, 0.5f, 0.31f);
+	}
+
+	if (_light)
+	{
+		_shader->set_vector3("lightColor", 1.0f, 1.0f, 1.0f);
+		_shader->set_vector3("lightPos", _light->get_position());
+		_shader->set_vector3("viewPos", Engine::get_singleton().get_camera()->get_position());
+	}
 	_shader->set_matrix4("projection", camera->get_projection_matrix());
 	_shader->set_matrix4("view", camera->get_view_matrix());
 	auto model = get_model_matrix();
-	model = glm::rotate(model, glm::radians(engine.get_time() * 30), glm::vec3(1.0f, 0.3f, 0.5f));
+	//model = glm::rotate(model, glm::radians(engine.get_time() * 30), glm::vec3(1.0f, 0.3f, 0.5f));
 	_shader->set_matrix4("model", model);
 	
 	glBindVertexArray(_vao);
@@ -100,4 +116,13 @@ void RenderObject::render() const
 	}
 
 	_shader->unbind();
+}
+
+Matrix4 RenderObject::get_model_matrix() const
+{
+	const Quaternion q = Quaternion(glm::radians(glm::vec3(_rotation.x, _rotation.y, _rotation.z)));
+	Matrix4 model = glm::mat4(1.0f);
+	model = glm::scale(model, _scale);
+	model = glm::mat4_cast(q) * model;
+	return glm::translate(model, _position);
 }
