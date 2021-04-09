@@ -80,6 +80,7 @@ void RenderObject::render() const
 	Engine& engine = Engine::get_singleton();
 	Camera* camera = engine.get_camera();
 
+	_shader->bind();
 	if (_diffuse_texture)
 	{
 		glActiveTexture(GL_TEXTURE0);
@@ -91,15 +92,14 @@ void RenderObject::render() const
 		glActiveTexture(GL_TEXTURE1);
 		_specular_texture->active();
 		_shader->set_int("material.specular", 1);
-		_shader->set_float("material.shininess", 8.0f);
+		_shader->set_float("material.shininess", 64.0f);
 	}
 
-	_shader->bind();
 	if (_light)
 	{
 		_shader->set_vector3("light.position", _light->get_position());
 		_shader->set_vector3("light.ambient", 0.6f, 0.6f, 0.6f);
-		_shader->set_vector3("light.diffuse", 0.8f, 0.8f, 0.8f);
+		_shader->set_vector3("light.diffuse", 0.5f, 0.5f, 0.5f);
 		_shader->set_vector3("light.specular", 1.0f, 1.0f, 1.0f);
 	}
 	_shader->set_vector3("viewPos", camera->get_position());
