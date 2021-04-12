@@ -41,9 +41,6 @@ public:
 	const Vector3& get_scale() const { return _scale; }
 	void set_scale(const Vector3& scale) { _scale = scale; }
 
-	RenderObject* get_light() const { return _light; }
-	void set_light(RenderObject* light) { _light = light; }
-
 private:
 	unsigned int _vao{ 0 };
 	unsigned int _vbo{ 0 };
@@ -57,6 +54,4 @@ private:
 	Vector3 _position{ 0.0f, 0.0f, 0.0f };
 	Vector3 _rotation{ 0.0f, 0.0f, 0.0f };
 	Vector3 _scale{ 1.0f, 1.0f, 1.0f };
-
-	RenderObject* _light{ nullptr };
 };

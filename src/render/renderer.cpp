@@ -1,12 +1,15 @@
 ﻿#include "renderer.h"
 #include <glad/glad.h>
+#include "engine/engine.h"
+#include "engine/camera.h"
 
 Renderer* Singleton<Renderer>::singleton = nullptr;
 
 Renderer::Renderer()
 	: _clear_color(0.2f, 0.3f, 0.3f, 1.0f)
 {
-	
+	_omni_lights.reserve(64);
+	_spot_lights.reserve(64);
 }
 
 Renderer::~Renderer()
@@ -31,7 +34,11 @@ void Renderer::end_frame(bool swap_buffer)
 void Renderer::draw(float delta)
 {
 	begin_frame(delta);
-	
+
+	const auto* camera = Engine::get_singleton().get_camera();
+	_spot_lights[0].spot.position = camera->get_position();
+	_spot_lights[0].spot.direction = camera->get_forward();
+
 	for (auto object : _render_objects)
 	{
 		object->render();

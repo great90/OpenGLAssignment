@@ -7,6 +7,7 @@
 #include "engine/camera.h"
 #include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
 #include <glm/gtc/quaternion.hpp>
+#include "renderer.h"
 
 RenderObject::RenderObject(const VertexFormat& vertex_format, const void* vertex_data, size_t vertex_count, const unsigned* indices, size_t index_count)
 {
@@ -77,6 +78,7 @@ RenderObject::~RenderObject()
 
 void RenderObject::render() const
 {
+	Renderer& renderer = Renderer::get_singleton();
 	Engine& engine = Engine::get_singleton();
 	Camera* camera = engine.get_camera();
 
@@ -95,13 +97,20 @@ void RenderObject::render() const
 		_shader->set_float("material.shininess", 64.0f);
 	}
 
-	if (_light)
+	renderer.get_directional_light().bind(*_shader, "directional_light");
+	const auto& omni_lights = renderer.get_omni_lights();
+	for (size_t i = 0; i < omni_lights.size(); ++i)
 	{
-		_shader->set_vector3("light.position", _light->get_position());
-		_shader->set_vector3("light.ambient", 0.6f, 0.6f, 0.6f);
-		_shader->set_vector3("light.diffuse", 0.5f, 0.5f, 0.5f);
-		_shader->set_vector3("light.specular", 1.0f, 1.0f, 1.0f);
+		omni_lights[i].bind(*_shader, "omni_lights[" + std::to_string(i) + "]");
 	}
+	_shader->set_int("omni_light_count", (int)omni_lights.size());
+	const auto& spot_lights = renderer.get_spot_lights();
+	for (size_t i = 0; i < spot_lights.size(); ++i)
+	{
+		spot_lights[i].bind(*_shader, "spot_lights[" + std::to_string(i) + "]");
+	}
+	_shader->set_int("spot_light_count", (int)spot_lights.size());
+
 	_shader->set_vector3("viewPos", camera->get_position());
 	_shader->set_matrix4("projection", camera->get_projection_matrix());
 	_shader->set_matrix4("view", camera->get_view_matrix());
