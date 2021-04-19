@@ -37,10 +37,15 @@ private:
 
 class ShaderProgram final
 {
+	friend class ShaderManager;
 public:
-	ShaderProgram(const std::vector<const ShaderObject*>& shaders);
-	ShaderProgram(const std::string& vs_path, const std::string& fs_path);
 	~ShaderProgram();
+
+	ShaderProgram(const ShaderProgram&) = delete;
+	ShaderProgram(ShaderProgram&&) = delete;
+
+	ShaderProgram& operator=(const ShaderProgram&) = delete;
+	ShaderProgram& operator=(ShaderProgram&&) = delete;
 
 	const std::string& get_error_log() const { return _error_log; }
 	bool valid() const { return _valid; }
@@ -62,6 +67,8 @@ public:
 	void unbind() const;
 
 protected:
+	ShaderProgram(const std::vector<const ShaderObject*>& shaders);
+	ShaderProgram(const std::string& vertex_path, const std::string& fragment_path);
 	unsigned int load_shader_file(ShaderObject::Type type, const std::string& path, std::string& error_log) const;
 
 private:

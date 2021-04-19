@@ -4,13 +4,16 @@
 #include <vector>
 #include "render_object.h"
 #include "shader.h"
-#include "Light.h"
+#include "light.h"
+#include <set>
+
+class Model;
 
 class Renderer : public Singleton<Renderer>
 {
 public:
-	Renderer();
-	~Renderer();
+	Renderer() = default;
+	~Renderer() { cleanup(); }
 
 	Renderer(const Renderer&) = delete;
 	Renderer(Renderer&&) = delete;
@@ -22,6 +25,7 @@ public:
 	Color get_clear_color() const { return _clear_color; }
 	
 	RenderObject* add_renderable(const RenderObject::VertexFormat& vformat, const void* vertices, size_t vcount, const unsigned int* indices = nullptr, size_t icount = 0);
+	void add_model(Model* model) { _models.emplace(model); }
 
 	Light& get_directional_light() { return _directional_light; }
 	//void set_directional_light(const Light& light) { assert(light.type == LightType::Directional); _directional_light = light; }
@@ -30,13 +34,18 @@ public:
 	void add_spot_light(Light light) { assert(light.type == LightType::Spot); _spot_lights.push_back(light); }
 	const std::vector<Light>& get_spot_lights() const { return _spot_lights; }
 
+	void bind_shader_data(ShaderProgram& shader) const;
+
+	void cleanup();
+	
 protected:
 	void begin_frame(float delta);
 	void end_frame(bool swap_buffer);
 
 private:
-	Color _clear_color;	
-	std::vector<RenderObject*> _render_objects;
+	Color _clear_color{ 0.2f, 0.3f, 0.3f, 1.0f };
+	std::vector<RenderObject*> _render_objects{ };
+	std::set<Model*> _models{ };
 
 	Light _directional_light{ };
 	std::vector<Light> _omni_lights{ };

@@ -5,6 +5,12 @@
 #include "render/render_object.h"
 #include "render/texture.h"
 #include "engine/camera.h"
+#include "render/model.h"
+#include "render/shader_manager.h"
+#include "render/texture_manager.h"
+
+ShaderManager* Singleton<ShaderManager>::singleton = nullptr;
+TextureManager* Singleton<TextureManager>::singleton = nullptr;
 
 void create_light_cube(ShaderProgram* shader, const Vector3& position, float scale = 1.0f, Vector3 color = Vector3(1.0f))
 {
@@ -48,24 +54,13 @@ void create_light_cube(ShaderProgram* shader, const Vector3& position, float sca
 
 bool init_boxes()
 {
-	static Texture diffuse_texture;
-	if (!diffuse_texture.load("asset/container2.png"))
-	{
-		return false;
-	}
-	static Texture specular_texture;
-	if (!specular_texture.load("asset/container2_specular.png"))
-	{
-		return false;
-	}
+	Texture* diffuse_texture = TextureManager::get_singleton().load_texture("asset/container2.png");
+	assert(diffuse_texture);
+	Texture* specular_texture = TextureManager::get_singleton().load_texture("asset/container2_specular.png");
+	assert(specular_texture);
 
-	static ShaderProgram shader("src/shader/box_vertex.shader", "src/shader/box_fragment.shader");
-	if (!shader.valid())
-	{
-		std::cout << "Create shader program failed:" << shader.get_error_log() << std::endl;
-		return false;
-	}
-
+	ShaderProgram* shader = ShaderManager::get_singleton().load("box", "src/shader/box_vertex.shader", "src/shader/box_fragment.shader");
+	assert(shader && shader->valid());
 	float vertices[] =
 	{
 		// x      y      z     nx     ny     nz     u     v
@@ -131,9 +126,9 @@ bool init_boxes()
 		RenderObject* object = Renderer::get_singleton().add_renderable(vf, vertices, 24, indices, sizeof(indices) / sizeof(indices[0]));
 		object->set_position(box_position);
 		object->set_rotation(Vector3(20.0f, -20.0f, -10.0f));
-		object->set_diffuse_texture(&diffuse_texture);
-		object->set_specular_texture(&specular_texture);
-		object->set_shader(&shader);
+		object->set_diffuse_texture(diffuse_texture);
+		object->set_specular_texture(specular_texture);
+		object->set_shader(shader);
 	}
 
 	return true;
@@ -141,13 +136,8 @@ bool init_boxes()
 
 bool init_lights()
 {
-	static ShaderProgram shader("src/shader/light_vertex.shader", "src/shader/light_fragment.shader");
-	if (!shader.valid())
-	{
-		std::cout << "Create shader program failed:" << shader.get_error_log() << std::endl;
-		return false;
-	}
-
+	ShaderProgram* shader = ShaderManager::get_singleton().load("light", "src/shader/light_vertex.shader", "src/shader/light_fragment.shader");
+	assert(shader && shader->valid());
 	Renderer& renderer = Renderer::get_singleton();
 
 	Light& directional = renderer.get_directional_light();
@@ -158,10 +148,10 @@ bool init_lights()
 	directional.directional.direction = Vector3(-0.2f, -1.0f, -0.3f);
 
 	const Vector3 omni_light_positions[] = {
-		Vector3(0.7f,  3.2f,  6.0f),
-		Vector3(2.3f, -3.3f, -4.0f),
+		Vector3( 0.7f,  3.2f,  6.0f),
+		Vector3( 2.3f, -3.3f, -4.0f),
 		Vector3(-4.0f,  2.0f, -12.0f),
-		Vector3(0.0f,  0.0f, -8.0f)
+		Vector3( 0.0f,  0.0f, -8.0f)
 	};
 	const Vector3 omni_light_colors[] = {
 		Vector3(1.0f, 0.0f, 0.0f),
@@ -179,10 +169,10 @@ bool init_lights()
 		omni.specular = Vector3(1.0f, 1.0f, 1.0f) * omni_light_colors[i];
 		omni.omni.position = omni_light_positions[i];
 		omni.omni.constant = 1.0f;
-		omni.omni.linear = 0.09;
-		omni.omni.quadratic = 0.032;
+		omni.omni.linear = 0.09f;
+		omni.omni.quadratic = 0.032f;
 		renderer.add_omni_light(omni);
-		create_light_cube(&shader, omni_light_positions[i], 0.2f, omni_light_colors[i]);
+		create_light_cube(shader, omni_light_positions[i], 0.2f, omni_light_colors[i]);
 	}
 
 	const auto* camera = Engine::get_singleton().get_camera();
@@ -194,8 +184,8 @@ bool init_lights()
 	spot.spot.position = camera->get_position();
 	spot.spot.direction = camera->get_forward();
 	spot.spot.constant = 1.0f;
-	spot.spot.linear = 0.09;
-	spot.spot.quadratic = 0.032;
+	spot.spot.linear = 0.09f;
+	spot.spot.quadratic = 0.032f;
 	spot.spot.innerCutOff = glm::cos(glm::radians(12.5f));
 	spot.spot.outerCutOff = glm::cos(glm::radians(15.0f));
 	renderer.add_spot_light(spot);
@@ -207,15 +197,28 @@ int main()
 {
 	std::shared_ptr<Engine> engine = std::make_shared<Engine>();
 	std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>();
+	std::shared_ptr<ShaderManager> shader_mgr = std::make_shared<ShaderManager>();
+	std::shared_ptr<TextureManager> texture_mgr = std::make_shared<TextureManager>();
 
 	if (!engine->startup())
 		return -1;
 
+	assert(shader_mgr->load("mesh", "src/shader/mesh_vertex.shader", "src/shader/mesh_fragment.shader"));
+
 	if (!init_boxes() || !init_lights())
 		return -1;
 
+	auto model = new Model("asset/model/nanosuit/nanosuit.obj");
+	model->set_position(Vector3(0.0f, 0.0f, -20.0f));
+	model->set_scale(Vector3(0.3f));
+	renderer->add_model(model);
+
 	engine->run();
-	engine->shutdown();
+
+	texture_mgr.reset();
+	shader_mgr.reset();
+	renderer.reset();
+	engine.reset();
 	
     return 0;
 }

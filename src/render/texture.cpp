@@ -4,17 +4,24 @@
 #include "stb_image.h"
 #include <ostream>
 #include <iostream>
+#include "graphic_api.h"
 
 Texture::Texture()
 	: _id(0)
 	, _width(0)
 	, _height(0)
+	, _path("")
 {	
 }
 
 Texture::~Texture()
 {
-	unload();
+	if (_id)
+	{
+		CHECK_GL_ERROR(glDeleteTextures(1, &_id));
+		_id = 0;
+		_path = "";
+	}
 }
 
 bool Texture::load(const std::string& path, bool genMipmap/*=true*/)
@@ -26,36 +33,36 @@ bool Texture::load(const std::string& path, bool genMipmap/*=true*/)
 		std::cout << "Failed to load texture: " << path.c_str() << std::endl;
 		return false;
 	}
-	assert(channels == 3 || channels == 4);
 
-	glGenTextures(1, &_id);
-	glBindTexture(GL_TEXTURE_2D, _id);
+	GLenum format;
+	switch (channels)
+	{
+	case 1: format = GL_RED; break;
+	case 3: format = GL_RGB; break;
+	case 4: format = GL_RGBA; break;
+	default: assert(false); break;
+	}
 
-	const unsigned int format = channels == 4 ? GL_RGBA : GL_RGB;
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+	_path = path;
+	CHECK_GL_ERROR(glGenTextures(1, &_id));
+	CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, _id));
+
+	CHECK_GL_ERROR(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data));
 	stbi_image_free(data);
 
+	CHECK_GL_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
+	CHECK_GL_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+	CHECK_GL_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+	CHECK_GL_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 	if (genMipmap)
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glGenerateMipmap(GL_TEXTURE_2D);
+		CHECK_GL_ERROR(glGenerateMipmap(GL_TEXTURE_2D));
 	}
 	return true;
 }
 
-void Texture::unload()
+void Texture::active(unsigned char index/*=0*/) const
 {
-	if (_id)
-	{
-		glDeleteTextures(1, &_id);
-		_id = 0;
-	}
-}
-
-void Texture::active() const
-{
-	glBindTexture(GL_TEXTURE_2D, _id);
+	CHECK_GL_ERROR(glActiveTexture(GL_TEXTURE0 + index));
+	CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, _id));
 }

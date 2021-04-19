@@ -17,7 +17,7 @@ if(HAS_BUILD_SUFFIX AND BUILD_SUFFIX)
     set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME_DEBUG "${TARGET_NAME}${BUILD_SUFFIX}")
 endif()
 
-target_link_libraries(${TARGET_NAME} opengl32 glad glfw)
+target_link_libraries(${TARGET_NAME} opengl32 glad glfw assimp)
 
 if (MSVC)
     if (NOT ${CMAKE_VERSION} VERSION_LESS "3.6.0")
