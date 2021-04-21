@@ -11,4 +11,4 @@
 [submodule "3rd/assimp"]
 	path = 3rd/assimp
 	url = https://github.com/assimp/assimp.git
-	tag = v5.0.1
+	branch = assimp_5.0_release
