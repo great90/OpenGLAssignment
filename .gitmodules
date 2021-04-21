@@ -10,5 +10,5 @@
 	url = https://github.com/g-truc/glm.git
 [submodule "3rd/assimp"]
 	path = 3rd/assimp
-	url = https://github.com/assimp/assimp.git
+	url = https://github.com/great90/assimp.git
 	branch = assimp_5.0_release
