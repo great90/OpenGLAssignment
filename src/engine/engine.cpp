@@ -42,8 +42,7 @@ bool Engine::startup()
 	glfwSetFramebufferSizeCallback(_window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(_window, mouse_move_callback);
 	glfwSetScrollCallback(_window, mouse_scroll_callback);
-	glEnable(GL_DEPTH_TEST);
-	// glEnable(GL_CULL_FACE);
+
 	_last_frame_time = get_time();
 
 	return true;
@@ -110,7 +109,7 @@ void Engine::on_mouse_moved(Vector2 position)
 	const Vector2 offset = (position - _last_mouse_position) * 0.1f;
 	_last_mouse_position = position;
 
-	if (glfwGetMouseButton(_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+	if (glfwGetMouseButton(_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 	{
 		_camera->rotate(offset.x, -offset.y); // reversed since y-coordinates go from bottom to top
 	}

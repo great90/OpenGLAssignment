@@ -2,7 +2,6 @@
 #include "color.h"
 #include "common/singleton.h"
 #include <vector>
-#include "render_object.h"
 #include "shader.h"
 #include "light.h"
 #include <set>
@@ -23,8 +22,7 @@ public:
 	void draw(float delta);
 	void set_clear_color(Color color) { _clear_color = color; }
 	Color get_clear_color() const { return _clear_color; }
-	
-	RenderObject* add_renderable(const RenderObject::VertexFormat& vformat, const void* vertices, size_t vcount, const unsigned int* indices = nullptr, size_t icount = 0);
+
 	void add_model(Model* model) { _models.emplace(model); }
 
 	Light& get_directional_light() { return _directional_light; }
@@ -44,7 +42,6 @@ protected:
 
 private:
 	Color _clear_color{ 0.2f, 0.3f, 0.3f, 1.0f };
-	std::vector<RenderObject*> _render_objects{ };
 	std::set<Model*> _models{ };
 
 	Light _directional_light{ };

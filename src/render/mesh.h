@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <vector>
 #include "math/math.h"
-#include "metrial.h"
+#include "material.h"
 
 class ShaderProgram;
 class Texture;
@@ -9,16 +9,20 @@ class Texture;
 class Mesh
 {
 public:
-	struct Vertex
+	struct VertexAttr
 	{
-		Vector3 position{};
-		Vector3 normal{};
-		Vector2 uv{};
-		Vector3 tangent{};
-		Vector3 bitangent{};
+		enum class ElementType : int
+		{
+			Float = 0,
+			Int
+		};
+		size_t element_count;
+		ElementType element_type;
+		bool normalization;
 	};
+	typedef std::vector<VertexAttr> VertexFormat;
 	
-	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, Material* material);
+	Mesh(VertexFormat vertex_format, const void* vertices_data, size_t vertices_count, std::vector<unsigned int> indices, Material* material);
 
 	Mesh(const Mesh&) = delete;
 	Mesh(Mesh&&) = delete;
@@ -31,12 +35,13 @@ public:
 	void draw(const Matrix4& model) const;
 
 private:
-	void setup();
+	void setup(const void* vertices_data);
 
 	unsigned int _vao{ 0 };
 	unsigned int _vbo{ 0 };
 	unsigned int _ebo{ 0 };
-	std::vector<Vertex> _vertices;
+	VertexFormat _vertex_format{ };
+	unsigned int _vertices_count{ 0 };
 	std::vector<unsigned int> _indices;
 	Material* _material;
 };

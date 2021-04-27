@@ -3,6 +3,7 @@
 #include "engine/engine.h"
 #include "engine/camera.h"
 #include "model.h"
+#include "graphic_api.h"
 
 Renderer* Singleton<Renderer>::singleton = nullptr;
 
@@ -25,24 +26,12 @@ void Renderer::draw(float delta)
 	_spot_lights[0].spot.position = camera->get_position();
 	_spot_lights[0].spot.direction = camera->get_forward();
 
-	for (auto object : _render_objects)
-	{
-		object->render();
-	}
-
 	for (auto model : _models)
 	{
 		model->draw();
 	}
 
 	end_frame(true);
-}
-
-RenderObject* Renderer::add_renderable(const RenderObject::VertexFormat& vformat, const void* vertices, size_t vcount, const unsigned int* indices/*=nullptr*/, size_t icount/*=0*/)
-{
-	RenderObject* object = new RenderObject(vformat, vertices, vcount, indices, icount);
-	_render_objects.emplace_back(object);
-	return object;
 }
 
 void Renderer::bind_shader_data(ShaderProgram& shader) const
@@ -69,12 +58,6 @@ void Renderer::bind_shader_data(ShaderProgram& shader) const
 
 void Renderer::cleanup()
 {
-	for (auto object : _render_objects)
-	{
-		delete object;
-	}
-	_render_objects.clear();
-
 	for (auto model : _models)
 	{
 		delete model;

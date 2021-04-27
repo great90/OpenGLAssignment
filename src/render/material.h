@@ -1,28 +1,24 @@
 ﻿#pragma once
 
-#include "shader.h"
-#include "texture.h"
-#include "renderer.h"
-#include "glad/glad.h"
-#include "graphic_api.h"
+#include <string>
+#include <utility>
+#include <vector>
+#include "math/math.h"
+
+class Texture;
+class ShaderProgram;
 
 class Material
 {
+	friend class MaterialManager;
 public:
-	Material(std::string name, ShaderProgram* shader,
-		std::vector<Texture*> diffuse_textures = std::vector<Texture*>(),
-		std::vector<Texture*> specular_textures = std::vector<Texture*>(),
-		std::vector<Texture*> normal_textures = std::vector<Texture*>(),
-		std::vector<Texture*> height_textures = std::vector<Texture*>())
-		: _name(name)
-		, _shader(shader)
-		, _diffuse_textures(std::move(diffuse_textures))
-		, _specular_textures(std::move(specular_textures))
-		, _normal_textures(std::move(normal_textures))
-		, _height_textures(std::move(height_textures))
-	{
-	}
 	~Material() = default;
+
+	Material(const Material&) = delete;
+	Material(Material&&) = delete;
+
+	Material& operator=(const Material&) = delete;
+	Material& operator=(Material&&) = delete;
 
 	bool operator==(const Material& rhs) const
 	{
@@ -55,38 +51,30 @@ public:
 	const std::vector<Texture*>& get_specular_textures() const { return _specular_textures; }
 	const std::vector<Texture*>& get_normal_textures() const { return _normal_textures; }
 	const std::vector<Texture*>& get_height_textures() const { return _height_textures; }
+	void set_enable_depth_test(bool enable) { _enable_depth_test = enable; }
+	bool is_enable_depth_test() const { return _enable_depth_test; }
+	void set_cull_back_faces(bool cull) { _cull_back_faces = cull; }
+	bool is_cull_back_faces() const { return _cull_back_faces; }
 
-	void active(const Matrix4& model) const
-	{
-		_shader->bind();
-		Renderer::get_singleton().bind_shader_data(*_shader);
-		int n = 0;
-		bind_textures(_diffuse_textures, "material.diffuse", n);
-		bind_textures(_specular_textures, "material.specular", n);
-		bind_textures(_normal_textures, "material.normal", n);
-		bind_textures(_height_textures, "material.height", n);
-
-		//model = glm::rotate(model, glm::radians(engine.get_time() * 30), glm::vec3(1.0f, 0.3f, 0.5f));
-		_shader->set_matrix4("model", model);
-
-	}
-
-	void deactive() const
-	{
-		CHECK_GL_ERROR(glActiveTexture(GL_TEXTURE0));
-		CHECK_GL_ERROR(glUseProgram(0));
-	}
+	void active(const Matrix4& model) const;
+	void deactive() const;
 
 private:
-	void bind_textures(const std::vector<Texture*>& textures, const std::string& prefix, int& n) const
+	Material(std::string name, ShaderProgram* shader,
+		std::vector<Texture*> diffuse_textures = std::vector<Texture*>(),
+		std::vector<Texture*> specular_textures = std::vector<Texture*>(),
+		std::vector<Texture*> normal_textures = std::vector<Texture*>(),
+		std::vector<Texture*> height_textures = std::vector<Texture*>())
+		: _name(std::move(name))
+		, _shader(shader)
+		, _diffuse_textures(std::move(diffuse_textures))
+		, _specular_textures(std::move(specular_textures))
+		, _normal_textures(std::move(normal_textures))
+		, _height_textures(std::move(height_textures))
 	{
-		for (size_t i = 0; i < textures.size(); ++i)
-		{
-			textures[i]->active(n);
-			_shader->set_int(prefix + "_textures[" + std::to_string(i) + "]", n++);
-		}
-		_shader->set_int(prefix + "_count", textures.size());
 	}
+
+	void bind_textures(const std::vector<Texture*>& textures, const std::string& prefix, int& n) const;
 
 	std::string _name;
 	ShaderProgram* _shader;
@@ -95,4 +83,7 @@ private:
 	std::vector<Texture*> _normal_textures{ };
 	std::vector<Texture*> _height_textures{ };
 	float _specular_shininess{ 64.0f };
+
+	bool _enable_depth_test{ true };
+	bool _cull_back_faces{ true };
 };

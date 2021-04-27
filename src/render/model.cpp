@@ -7,6 +7,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include "texture_manager.h"
 #include "shader_manager.h"
+#include "material_manager.h"
 
 void Model::load_model(const std::string& path)
 {
@@ -36,13 +37,29 @@ void Model::process_node(aiNode* node, const aiScene* scene)
 
 Mesh* Model::process_mesh(aiMesh* mesh, const aiScene* scene) const
 {
-	std::vector<Mesh::Vertex> vertices;
+	struct Vertex
+	{
+		Vector3 position{};
+		Vector3 normal{};
+		Vector2 uv{};
+		Vector3 tangent{};
+		Vector3 bitangent{};
+	};
+
+	static Mesh::VertexFormat vf{
+		{ 3, Mesh::VertexAttr::ElementType::Float, false },
+		{ 3, Mesh::VertexAttr::ElementType::Float, false },
+		{ 2, Mesh::VertexAttr::ElementType::Float, false },
+		{ 3, Mesh::VertexAttr::ElementType::Float, false },
+		{ 3, Mesh::VertexAttr::ElementType::Float, false }
+	};
+	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 	std::vector<Texture*> textures;
 
 	for (size_t i = 0; i < mesh->mNumVertices; ++i)
 	{
-		Mesh::Vertex vertex;
+		Vertex vertex;
 		vertex.position = Vector3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
 		if (mesh->HasNormals())
 		{
@@ -76,16 +93,20 @@ Mesh* Model::process_mesh(aiMesh* mesh, const aiScene* scene) const
 
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-	const std::vector<Texture*> diffuse_textures = load_material_textures(material, aiTextureType_DIFFUSE);
-	const std::vector<Texture*> specular_textures = load_material_textures(material, aiTextureType_SPECULAR);
-	const std::vector<Texture*> normal_textures = load_material_textures(material, aiTextureType_HEIGHT);
-	const std::vector<Texture*> height_textures = load_material_textures(material, aiTextureType_AMBIENT);
+	Material* mat = MaterialManager::get_singleton().get_material(material->GetName().C_Str());
+	if (!mat)
+	{
+		ShaderProgram* shader = ShaderManager::get_singleton().get_program("mesh");
+		assert(shader && shader->valid());
 
-	ShaderProgram* shader = ShaderManager::get_singleton().get_program("mesh");
-	assert(shader && shader->valid());
+		const std::vector<Texture*> diffuse_textures = load_material_textures(material, aiTextureType_DIFFUSE);
+		const std::vector<Texture*> specular_textures = load_material_textures(material, aiTextureType_SPECULAR);
+		const std::vector<Texture*> normal_textures = load_material_textures(material, aiTextureType_HEIGHT);
+		const std::vector<Texture*> height_textures = load_material_textures(material, aiTextureType_AMBIENT);
 
-	Material* mat = new Material(material->GetName().C_Str(), shader, diffuse_textures, specular_textures, normal_textures, height_textures);
-	return new Mesh(vertices, indices, mat);
+		mat = MaterialManager::get_singleton().create_material(material->GetName().C_Str(), shader, diffuse_textures, specular_textures, normal_textures, height_textures);
+	}
+	return new Mesh(vf, vertices.data(), vertices.size(), indices, mat);
 }
 
 std::vector<Texture*> Model::load_material_textures(aiMaterial* material, aiTextureType type) const

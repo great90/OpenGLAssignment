@@ -1,4 +1,4 @@
-﻿#version 330 core
+#version 330 core
 
 #define MAX_DIFFUSE_TEXTURES 2
 #define MAX_SPECULAR_TEXTURES 1

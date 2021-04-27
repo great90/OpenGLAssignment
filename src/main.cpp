@@ -2,13 +2,14 @@
 #include "engine/engine.h"
 #include "render/renderer.h"
 #include "render/shader.h"
-#include "render/render_object.h"
 #include "render/texture.h"
 #include "engine/camera.h"
 #include "render/model.h"
 #include "render/shader_manager.h"
 #include "render/texture_manager.h"
+#include "render/material_manager.h"
 
+MaterialManager* Singleton<MaterialManager>::singleton = nullptr;
 ShaderManager* Singleton<ShaderManager>::singleton = nullptr;
 TextureManager* Singleton<TextureManager>::singleton = nullptr;
 
@@ -34,7 +35,7 @@ void create_light_cube(ShaderProgram* shader, const Vector3& position, float sca
 		 0.5f,  0.5f, -0.5f, color.r, color.g, color.b,
 		-0.5f,  0.5f, -0.5f, color.r, color.g, color.b,
 	};
-	unsigned int indices[] = {
+	std::vector<unsigned int> indices = {
 		0, 1, 5, 5, 4, 0, // front
 		2, 3, 7, 7, 6, 2, // back
 		0, 4, 7, 7, 3, 0, // left
@@ -42,14 +43,20 @@ void create_light_cube(ShaderProgram* shader, const Vector3& position, float sca
 		4, 5, 6, 6, 7, 4, // top
 		0, 3, 2, 2, 1, 0  // bottom
 	};
-	RenderObject::VertexFormat vf;
-	vf.push_back({ 3, RenderObject::VertexAttr::ElementType::Float, false });
-	vf.push_back({ 3, RenderObject::VertexAttr::ElementType::Float, false });
+	Mesh::VertexFormat vf;
+	vf.push_back({ 3, Mesh::VertexAttr::ElementType::Float, false });
+	vf.push_back({ 3, Mesh::VertexAttr::ElementType::Float, false });
 
-	RenderObject* light_cube = Renderer::get_singleton().add_renderable(vf, vertices, 8, indices, sizeof(indices) / sizeof(indices[0]));
-	light_cube->set_position(position);
-	light_cube->set_scale(Vector3(scale));
-	light_cube->set_shader(shader);
+	Material* material = MaterialManager::get_singleton().get_material("light_cube");
+	if (!material)
+	{
+		material = MaterialManager::get_singleton().create_material("light_cube", shader);
+	}
+	Mesh* mesh = new Mesh(vf, vertices, 8, indices, material);
+	auto model = new Model(std::vector<Mesh*>{mesh});
+	model->set_position(position);
+	model->set_scale(Vector3(scale));
+	Renderer::get_singleton().add_model(model);
 }
 
 bool init_boxes()
@@ -59,8 +66,16 @@ bool init_boxes()
 	Texture* specular_texture = TextureManager::get_singleton().load_texture("asset/container2_specular.png");
 	assert(specular_texture);
 
-	ShaderProgram* shader = ShaderManager::get_singleton().load("box", "src/shader/box_vertex.shader", "src/shader/box_fragment.shader");
+	ShaderProgram* shader = ShaderManager::get_singleton().get_program("mesh");
 	assert(shader && shader->valid());
+
+	Material* material = MaterialManager::get_singleton().get_material("boxes");
+	if (!material)
+	{
+		material = MaterialManager::get_singleton().create_material("boxes", shader, { diffuse_texture }, { specular_texture });
+	}
+	material->set_cull_back_faces(false);
+
 	float vertices[] =
 	{
 		// x      y      z     nx     ny     nz     u     v
@@ -95,7 +110,7 @@ bool init_boxes()
 		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
 	};
-	unsigned int indices[] = {
+	std::vector<unsigned int> indices = {
 		 0,  1,  2,  2,  3,  0,
 		 4,  5,  6,  6,  7,  4,
 		 8,  9, 10, 10, 11,  8,
@@ -116,19 +131,18 @@ bool init_boxes()
 		Vector3(-1.3f,  1.0f, -1.5f)
 	};
 
-	RenderObject::VertexFormat vf;
-	vf.push_back({ 3, RenderObject::VertexAttr::ElementType::Float, false });
-	vf.push_back({ 3, RenderObject::VertexAttr::ElementType::Float, false });
-	vf.push_back({ 2, RenderObject::VertexAttr::ElementType::Float, false });
+	Mesh::VertexFormat vf;
+	vf.push_back({ 3, Mesh::VertexAttr::ElementType::Float, false });
+	vf.push_back({ 3, Mesh::VertexAttr::ElementType::Float, false });
+	vf.push_back({ 2, Mesh::VertexAttr::ElementType::Float, false });
 
 	for (auto box_position : positions)
 	{
-		RenderObject* object = Renderer::get_singleton().add_renderable(vf, vertices, 24, indices, sizeof(indices) / sizeof(indices[0]));
-		object->set_position(box_position);
-		object->set_rotation(Vector3(20.0f, -20.0f, -10.0f));
-		object->set_diffuse_texture(diffuse_texture);
-		object->set_specular_texture(specular_texture);
-		object->set_shader(shader);
+		Mesh* mesh = new Mesh(vf, vertices, 24, indices, material);
+		auto model = new Model(std::vector<Mesh*>{mesh});
+		model->set_position(box_position);
+		model->set_rotation(Vector3(20.0f, -20.0f, -10.0f));
+		Renderer::get_singleton().add_model(model);
 	}
 
 	return true;
@@ -159,7 +173,6 @@ bool init_lights()
 		Vector3(0.0f, 0.0f, 1.0f),
 		Vector3(1.0f, 1.0f, 1.0f)
 	};
-	RenderObject* light_cube = nullptr;
 	for (size_t i = 0; i < sizeof(omni_light_positions) / sizeof(omni_light_positions[0]); ++i)
 	{
 		Light omni;
@@ -197,6 +210,7 @@ int main()
 {
 	std::shared_ptr<Engine> engine = std::make_shared<Engine>();
 	std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>();
+	std::shared_ptr<MaterialManager> material_mgr = std::make_shared<MaterialManager>();
 	std::shared_ptr<ShaderManager> shader_mgr = std::make_shared<ShaderManager>();
 	std::shared_ptr<TextureManager> texture_mgr = std::make_shared<TextureManager>();
 
@@ -217,6 +231,7 @@ int main()
 
 	texture_mgr.reset();
 	shader_mgr.reset();
+	material_mgr.reset();
 	renderer.reset();
 	engine.reset();
 	

@@ -7,7 +7,7 @@ set(ALL_CODE_FILES ${ALL_HEADER_FILES} ${ALL_SOURCE_FILES})
 GROUP_FILES(ALL_CODE_FILES)
 
 add_library(${TARGET_NAME} STATIC ${ALL_CODE_FILES})
-set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX FOLDER "Libraries")
 
 # append the _d (or whatever) for debug builds as needed.
 #if(HAS_BUILD_SUFFIX AND BUILD_SUFFIX)
