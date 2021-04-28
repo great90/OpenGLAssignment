@@ -8,6 +8,18 @@
 class Texture;
 class ShaderProgram;
 
+enum class DepthTestFunc : unsigned int
+{
+	ALWAYS,		// 永远通过深度测试
+	NEVER,		// 永远不通过深度测试
+	LESS,		// 在片段深度值小于缓冲的深度值时通过测试
+	EQUAL,		// 在片段深度值等于缓冲区的深度值时通过测试
+	LEQUAL,		// 在片段深度值小于等于缓冲区的深度值时通过测试
+	GREATER,	// 在片段深度值大于缓冲区的深度值时通过测试
+	NOTEQUAL,	// 在片段深度值不等于缓冲区的深度值时通过测试
+	GEQUAL,		// 在片段深度值大于等于缓冲区的深度值时通过测试
+};
+
 class Material
 {
 	friend class MaterialManager;
@@ -53,6 +65,11 @@ public:
 	const std::vector<Texture*>& get_height_textures() const { return _height_textures; }
 	void set_enable_depth_test(bool enable) { _enable_depth_test = enable; }
 	bool is_enable_depth_test() const { return _enable_depth_test; }
+	void set_update_depth_value(bool update) { _update_depth_value = update; }
+	bool is_update_depth_value() const { return _update_depth_value; }
+	void set_depth_test_func(DepthTestFunc func) { _depth_test_func = func; }
+	DepthTestFunc get_depth_test_func() const { return _depth_test_func; }
+
 	void set_cull_back_faces(bool cull) { _cull_back_faces = cull; }
 	bool is_cull_back_faces() const { return _cull_back_faces; }
 
@@ -85,5 +102,7 @@ private:
 	float _specular_shininess{ 64.0f };
 
 	bool _enable_depth_test{ true };
+	bool _update_depth_value{ true };
+	DepthTestFunc _depth_test_func{ DepthTestFunc::LESS };
 	bool _cull_back_faces{ true };
 };

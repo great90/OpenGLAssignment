@@ -40,6 +40,8 @@ void Renderer::bind_shader_data(ShaderProgram& shader) const
 	shader.set_vector3("viewPos", camera->get_position());
 	shader.set_matrix4("projection", camera->get_projection_matrix());
 	shader.set_matrix4("view", camera->get_view_matrix());
+	shader.set_float("camera_near", camera->get_near());
+	shader.set_float("camera_far", camera->get_far());
 
 	_directional_light.bind(shader, "directional_light");
 

@@ -63,6 +63,8 @@ uniform SpotLight spot_lights[MAX_SPOT_LIGHTS];
 uniform int omni_light_count;
 uniform int spot_light_count;
 uniform vec3 viewPos;
+uniform float camera_near;
+uniform float camera_far;
 
 in vec3 fPos;
 in vec3 fNormal;
@@ -73,6 +75,12 @@ out vec4 FragColor;
 vec3 calc_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 diffuse, vec3 specular);
 vec3 calc_omni_light(OmniLight light, vec3 normal, vec3 fPos, vec3 viewDir, vec3 diffuse, vec3 specular);
 vec3 calc_spot_light(SpotLight light, vec3 normal, vec3 fPos, vec3 viewDir, vec3 diffuse, vec3 specular);
+
+float LinearizeDepth(float depth)
+{
+	float z = depth * 2.0 - 1.0; // back to NDC 
+	return (2.0 * camera_near * camera_far) / (camera_far + camera_near - z * (camera_far - camera_near));
+}
 
 void main()
 {
@@ -93,7 +101,10 @@ void main()
 		color += calc_omni_light(omni_lights[i], normal, fPos, viewDir, diffuse, specular);
 	for (int i = 0; i < spot_light_count; ++i)
 		color += calc_spot_light(spot_lights[i], normal, fPos, viewDir, diffuse, specular);
-
+	
+	//gl_FragDepth = LinearizeDepth(gl_FragCoord.z);
+	//color = vec3(gl_FragCoord.z);
+	//color = vec3(LinearizeDepth(gl_FragCoord.z) / camera_far);
 	FragColor = vec4(color, 1.0);
 }
 

@@ -8,13 +8,34 @@
 void Material::active(const Matrix4& model) const
 {
 	if (_enable_depth_test)
+	{
 		CHECK_GL_ERROR(glEnable(GL_DEPTH_TEST));
+		CHECK_GL_ERROR(glDepthMask(_update_depth_value ? GL_TRUE : GL_FALSE));
+		switch (_depth_test_func)
+		{
+		case DepthTestFunc::ALWAYS:   glDepthFunc(GL_ALWAYS); break;
+		case DepthTestFunc::NEVER:    glDepthFunc(GL_NEVER); break;
+		case DepthTestFunc::LESS:     glDepthFunc(GL_LESS); break;
+		case DepthTestFunc::EQUAL:    glDepthFunc(GL_EQUAL); break;
+		case DepthTestFunc::LEQUAL:   glDepthFunc(GL_LEQUAL); break;
+		case DepthTestFunc::GREATER:  glDepthFunc(GL_GREATER); break;
+		case DepthTestFunc::NOTEQUAL: glDepthFunc(GL_NOTEQUAL); break;
+		case DepthTestFunc::GEQUAL:   glDepthFunc(GL_GEQUAL); break;
+		default: break;
+		}		
+	}
 	else
+	{
 		CHECK_GL_ERROR(glDisable(GL_DEPTH_TEST));
+	}
 	if (_cull_back_faces)
+	{
 		CHECK_GL_ERROR(glEnable(GL_CULL_FACE));
+	}
 	else
+	{
 		CHECK_GL_ERROR(glDisable(GL_CULL_FACE));
+	}
 
 	_shader->bind();
 	Renderer::get_singleton().bind_shader_data(*_shader);
