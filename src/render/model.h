@@ -25,7 +25,17 @@ public:
 	{
 		const auto model = get_model_matrix();
 		for (auto& mesh : _meshes)
+		{
+			if (const auto handler = mesh->get_pre_draw_handler())
+			{
+				(*handler)(*mesh, model);
+			}
 			mesh->draw(model);
+			if (const auto handler = mesh->get_post_draw_handler())
+			{
+				(*handler)(*mesh, model);
+			}
+		}
 	}
 
 	const Vector3& get_position() const { return _position; }

@@ -10,7 +10,7 @@ Renderer* Singleton<Renderer>::singleton = nullptr;
 void Renderer::begin_frame(float delta)
 {
 	CHECK_GL_ERROR(glClearColor(_clear_color.r, _clear_color.g, _clear_color.b, _clear_color.a));
-	CHECK_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+	CHECK_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 }
 
 void Renderer::end_frame(bool swap_buffer)

@@ -8,6 +8,8 @@
 #include "render/shader_manager.h"
 #include "render/texture_manager.h"
 #include "render/material_manager.h"
+#include "glad/glad.h"
+#include <glm/ext/matrix_transform.inl>
 
 MaterialManager* Singleton<MaterialManager>::singleton = nullptr;
 ShaderManager* Singleton<ShaderManager>::singleton = nullptr;
@@ -136,9 +138,52 @@ bool init_boxes()
 	vf.push_back({ 3, Mesh::VertexAttr::ElementType::Float, false });
 	vf.push_back({ 2, Mesh::VertexAttr::ElementType::Float, false });
 
+	static Mesh::DrawHandler pre_handler = [](Mesh& mesh, const Matrix4& model)
+	{
+		glEnable(GL_STENCIL_TEST);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		// 1st. render pass, draw objects as normal, writing to the stencil buffer
+		// --------------------------------------------------------------------
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);		
+	};	
+
+	static Mesh::DrawHandler post_handler = [](Mesh& mesh, const Matrix4& model)
+	{
+		// 2nd. render pass: now draw slightly scaled versions of the objects, this time disabling stencil writing.
+		// Because the stencil buffer is now filled with several 1s. The parts of the buffer that are 1 are not drawn, thus only drawing 
+		// the objects' size differences, making it look like borders.
+		// -----------------------------------------------------------------------------------------------------------------------------
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x00);
+
+		Material* border = MaterialManager::get_singleton().get_material("border");
+		if (!border)
+		{
+			ShaderProgram* shader = ShaderManager::get_singleton().load("border", "src/shader/border_vertex.shader", "src/shader/border_fragment.shader");
+			assert(shader && shader->valid());
+
+			border = MaterialManager::get_singleton().create_material("border", shader, {}, {});
+			border->set_enable_depth_test(false);
+		}
+
+		Material* mat = mesh.get_material();
+		mesh.set_material(border);
+		const float scale = 1.1f;
+		mesh.draw(glm::scale(model, glm::vec3(scale, scale, scale)));
+		mesh.set_material(mat);
+
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+
+		glEnable(GL_STENCIL_TEST);
+	};
 	for (auto box_position : positions)
 	{
 		Mesh* mesh = new Mesh(vf, vertices, 24, indices, material);
+		mesh->set_pre_draw_handler(&pre_handler);
+		mesh->set_post_draw_handler(&post_handler);
+
 		auto model = new Model(std::vector<Mesh*>{mesh});
 		model->set_position(box_position);
 		model->set_rotation(Vector3(20.0f, -20.0f, -10.0f));
