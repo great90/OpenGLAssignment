@@ -47,13 +47,15 @@ bool Texture::load(const std::string& path, bool genMipmap/*=true*/)
 	CHECK_GL_ERROR(glGenTextures(1, &_id));
 	CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, _id));
 
-	CHECK_GL_ERROR(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data));
-	stbi_image_free(data);
-
-	CHECK_GL_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
-	CHECK_GL_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+	const auto wrap = format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT;
+	CHECK_GL_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap));
+	CHECK_GL_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap));
 	CHECK_GL_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 	CHECK_GL_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+	CHECK_GL_ERROR(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, data));
+	stbi_image_free(data);
+
 	if (genMipmap)
 	{
 		CHECK_GL_ERROR(glGenerateMipmap(GL_TEXTURE_2D));

@@ -2,12 +2,14 @@
 #include "mesh.h"
 
 #include "assimp/scene.h"
+#include "renderer.h"
 
 struct aiMaterial;
 struct aiNode;
 
 class Model
 {
+	friend class Renderer;
 public:
 	Model(const std::string& path)
 	{
@@ -21,20 +23,12 @@ public:
 
 	~Model() = default;
 
-	void draw()
+	void draw(std::vector<Renderer::RenderInfo>& render_list)
 	{
 		const auto model = get_model_matrix();
-		for (auto& mesh : _meshes)
+		for (auto* mesh : _meshes)
 		{
-			if (const auto handler = mesh->get_pre_draw_handler())
-			{
-				(*handler)(*mesh, model);
-			}
-			mesh->draw(model);
-			if (const auto handler = mesh->get_post_draw_handler())
-			{
-				(*handler)(*mesh, model);
-			}
+			render_list.emplace_back(std::make_pair(mesh, model));
 		}
 	}
 

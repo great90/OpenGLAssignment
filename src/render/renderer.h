@@ -5,6 +5,7 @@
 #include "shader.h"
 #include "light.h"
 #include <set>
+#include "mesh.h"
 
 class Model;
 
@@ -35,16 +36,21 @@ public:
 	void bind_shader_data(ShaderProgram& shader) const;
 
 	void cleanup();
-	
+
+	typedef std::pair<Mesh*, Matrix4> RenderInfo;
+
 protected:
 	void begin_frame(float delta);
 	void end_frame(bool swap_buffer);
 
 private:
+	void draw_render_list(const std::vector<RenderInfo>& render_list);
+
 	Color _clear_color{ 0.2f, 0.3f, 0.3f, 1.0f };
 	std::set<Model*> _models{ };
 
 	Light _directional_light{ };
 	std::vector<Light> _omni_lights{ };
 	std::vector<Light> _spot_lights{ };
+	std::vector<RenderInfo> _render_list{ };
 };

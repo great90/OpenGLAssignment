@@ -3,6 +3,7 @@
 #include "engine/engine.h"
 #include "engine/camera.h"
 #include "model.h"
+#include "material.h"
 #include "graphic_api.h"
 
 Renderer* Singleton<Renderer>::singleton = nullptr;
@@ -11,11 +12,53 @@ void Renderer::begin_frame(float delta)
 {
 	CHECK_GL_ERROR(glClearColor(_clear_color.r, _clear_color.g, _clear_color.b, _clear_color.a));
 	CHECK_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+
+	_render_list.clear();
 }
 
 void Renderer::end_frame(bool swap_buffer)
 {
+	std::vector<RenderInfo> opaque_list{ };
+	std::vector<RenderInfo> translucent_list{ };
+
+	for (const auto& info : _render_list)
+	{
+		if (info.first->get_material()->is_translucence())
+			translucent_list.emplace_back(info);
+		else
+			opaque_list.emplace_back(info);
+	}
+	const auto camera_pos = Engine::get_singleton().get_camera()->get_position();
+	std::sort(translucent_list.begin(), translucent_list.end(), [=](RenderInfo& lhs, RenderInfo& rhs)
+	{
+		const auto lpos = Vector3(lhs.second[3]);
+		const auto rpos = Vector3(rhs.second[3]);
+		const auto llen = distance_sqr(camera_pos, lpos);
+		const auto rlen = distance_sqr(camera_pos, rpos);
+		return llen > rlen;
+	});
+	draw_render_list(opaque_list);
+	draw_render_list(translucent_list);
+
 	// TODO swap buffer
+}
+
+void Renderer::draw_render_list(const std::vector<RenderInfo>& render_list)
+{
+	for (const auto& info : render_list)
+	{
+		auto* mesh = info.first;
+		auto model = info.second;
+		if (const auto handler = mesh->get_pre_draw_handler())
+		{
+			(*handler)(*mesh, model);
+		}
+		mesh->draw(model);
+		if (const auto handler = mesh->get_post_draw_handler())
+		{
+			(*handler)(*mesh, model);
+		}
+	}
 }
 
 void Renderer::draw(float delta)
@@ -28,7 +71,7 @@ void Renderer::draw(float delta)
 
 	for (auto model : _models)
 	{
-		model->draw();
+		model->draw(_render_list);
 	}
 
 	end_frame(true);

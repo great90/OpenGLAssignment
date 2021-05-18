@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include <vector>
 #include "math/math.h"
-#include "material.h"
 #include <functional>
 
 class ShaderProgram;
 class Texture;
+class Material;
 
 class Mesh
 {

@@ -5,6 +5,28 @@
 #include "glad/glad.h"
 #include "graphic_api.h"
 
+decltype(GL_ONE) convert_blend_factor(AlphaBlendFactor factor)
+{
+	switch (factor)
+	{
+	case AlphaBlendFactor::ZERO: return GL_ZERO;
+	case AlphaBlendFactor::ONE: return GL_ONE;
+	case AlphaBlendFactor::SRC_COLOR: return GL_SRC_COLOR;
+	case AlphaBlendFactor::ONE_MINUS_SRC_COLOR: return GL_ONE_MINUS_SRC_COLOR;
+	case AlphaBlendFactor::DST_COLOR: return GL_DST_COLOR;
+	case AlphaBlendFactor::ONE_MINUS_DST_COLOR: return GL_ONE_MINUS_DST_COLOR;
+	case AlphaBlendFactor::SRC_ALPHA: return GL_SRC_ALPHA;
+	case AlphaBlendFactor::ONE_MINUS_SRC_ALPHA: return GL_ONE_MINUS_SRC_ALPHA;
+	case AlphaBlendFactor::DST_ALPHA: return GL_DST_ALPHA;
+	case AlphaBlendFactor::ONE_MINUS_DST_ALPHA: return GL_ONE_MINUS_DST_ALPHA;
+	case AlphaBlendFactor::CONSTANT_COLOR: return GL_CONSTANT_COLOR;
+	case AlphaBlendFactor::ONE_MINUS_CONSTANT_COLOR: return GL_ONE_MINUS_CONSTANT_COLOR;
+	case AlphaBlendFactor::CONSTANT_ALPHA: return GL_CONSTANT_ALPHA;
+	case AlphaBlendFactor::ONE_MINUS_CONSTANT_ALPHA: return GL_ONE_MINUS_CONSTANT_ALPHA;
+	default: assert(false); return GL_ZERO;
+	}
+}
+
 void Material::active(const Matrix4& model) const
 {
 	if (_enable_depth_test)
@@ -13,14 +35,14 @@ void Material::active(const Matrix4& model) const
 		CHECK_GL_ERROR(glDepthMask(_update_depth_value ? GL_TRUE : GL_FALSE));
 		switch (_depth_test_func)
 		{
-		case DepthTestFunc::ALWAYS:   glDepthFunc(GL_ALWAYS); break;
-		case DepthTestFunc::NEVER:    glDepthFunc(GL_NEVER); break;
-		case DepthTestFunc::LESS:     glDepthFunc(GL_LESS); break;
-		case DepthTestFunc::EQUAL:    glDepthFunc(GL_EQUAL); break;
-		case DepthTestFunc::LEQUAL:   glDepthFunc(GL_LEQUAL); break;
-		case DepthTestFunc::GREATER:  glDepthFunc(GL_GREATER); break;
-		case DepthTestFunc::NOTEQUAL: glDepthFunc(GL_NOTEQUAL); break;
-		case DepthTestFunc::GEQUAL:   glDepthFunc(GL_GEQUAL); break;
+		case DepthTestFunc::ALWAYS:   CHECK_GL_ERROR(glDepthFunc(GL_ALWAYS)); break;
+		case DepthTestFunc::NEVER:    CHECK_GL_ERROR(glDepthFunc(GL_NEVER)); break;
+		case DepthTestFunc::LESS:     CHECK_GL_ERROR(glDepthFunc(GL_LESS)); break;
+		case DepthTestFunc::EQUAL:    CHECK_GL_ERROR(glDepthFunc(GL_EQUAL)); break;
+		case DepthTestFunc::LEQUAL:   CHECK_GL_ERROR(glDepthFunc(GL_LEQUAL)); break;
+		case DepthTestFunc::GREATER:  CHECK_GL_ERROR(glDepthFunc(GL_GREATER)); break;
+		case DepthTestFunc::NOTEQUAL: CHECK_GL_ERROR(glDepthFunc(GL_NOTEQUAL)); break;
+		case DepthTestFunc::GEQUAL:   CHECK_GL_ERROR(glDepthFunc(GL_GEQUAL)); break;
 		default: break;
 		}		
 	}
@@ -28,13 +50,35 @@ void Material::active(const Matrix4& model) const
 	{
 		CHECK_GL_ERROR(glDisable(GL_DEPTH_TEST));
 	}
-	if (_cull_back_faces)
+
+	if (_cull_face_type != CullFaceType::NONE)
 	{
 		CHECK_GL_ERROR(glEnable(GL_CULL_FACE));
+		switch (_cull_face_type)
+		{
+		default:
+		case CullFaceType::BACK: CHECK_GL_ERROR(glCullFace(GL_BACK)); break;
+		case CullFaceType::FRONT: CHECK_GL_ERROR(glCullFace(GL_FRONT)); break;
+		case CullFaceType::ALL: CHECK_GL_ERROR(glCullFace(GL_FRONT_AND_BACK)); break;
+		}
 	}
 	else
 	{
 		CHECK_GL_ERROR(glDisable(GL_CULL_FACE));
+	}
+
+	CHECK_GL_ERROR(glFrontFace(_clockwise_winding_order ? GL_CW : GL_CCW));
+
+	if (_translucence && _enable_alpha_blend)
+	{
+		CHECK_GL_ERROR(glEnable(GL_BLEND));
+		const auto src = convert_blend_factor(_blend_src_factor);
+		const auto dst = convert_blend_factor(_blend_dst_factor);
+		CHECK_GL_ERROR(glBlendFunc(src, dst));
+	}
+	else
+	{
+		CHECK_GL_ERROR(glDisable(GL_BLEND));
 	}
 
 	_shader->bind();

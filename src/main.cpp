@@ -76,7 +76,7 @@ bool init_boxes()
 	{
 		material = MaterialManager::get_singleton().create_material("boxes", shader, { diffuse_texture }, { specular_texture });
 	}
-	material->set_cull_back_faces(false);
+	material->set_cull_face_type(CullFaceType::NONE);
 
 	float vertices[] =
 	{
@@ -193,6 +193,62 @@ bool init_boxes()
 	return true;
 }
 
+bool init_windows()
+{
+	Material* material = MaterialManager::get_singleton().get_material("window");
+	if (!material)
+	{
+		ShaderProgram* shader = ShaderManager::get_singleton().get_program("window");
+		if (!shader)
+		{
+			shader = ShaderManager::get_singleton().load("window", "src/shader/window_vertex.shader", "src/shader/window_fragment.shader");
+		}
+		assert(shader && shader->valid());
+
+		Texture* texture = TextureManager::get_singleton().load_texture("asset/blending_transparent_window.png");
+		assert(texture);
+
+		material = MaterialManager::get_singleton().create_material("window", shader, { texture }, {});
+		
+		material->set_translucence(true);
+		material->set_enable_alpha_blend(true);
+	}
+	material->set_cull_face_type(CullFaceType::NONE);
+
+	float vertices[] =
+	{
+		// x      y      z     u     v
+		 -0.5f, -0.5f,  0.0f, 0.0f, 0.0f,
+		  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,
+		  0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
+		 -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,
+	};
+	const std::vector<unsigned int> indices = {
+		 0,  1,  2,  2,  3,  0
+	};
+	Vector3 positions[] = {
+		Vector3(0.0f,  0.0f,  0.0f),
+		Vector3(0.1f,  0.3f, -1.0f),
+		Vector3(0.5f, -0.2f,  2.5f)
+	};
+
+	Mesh::VertexFormat vf;
+	vf.push_back({ 3, Mesh::VertexAttr::ElementType::Float, false });
+	vf.push_back({ 2, Mesh::VertexAttr::ElementType::Float, false });
+
+	for (auto pos : positions)
+	{
+		Mesh* mesh = new Mesh(vf, vertices, 4, indices, material);
+
+		auto model = new Model(std::vector<Mesh*>{mesh});
+		model->set_position(pos);
+		//model->set_rotation(Vector3(20.0f, -20.0f, -10.0f));
+		Renderer::get_singleton().add_model(model);
+	}
+
+	return true;
+}
+
 bool init_lights()
 {
 	ShaderProgram* shader = ShaderManager::get_singleton().load("light", "src/shader/light_vertex.shader", "src/shader/light_fragment.shader");
@@ -264,7 +320,7 @@ int main()
 
 	assert(shader_mgr->load("mesh", "src/shader/mesh_vertex.shader", "src/shader/mesh_fragment.shader"));
 
-	if (!init_boxes() || !init_lights())
+	if (!init_windows() || !init_lights())	// init_boxes
 		return -1;
 
 	auto model = new Model("asset/model/nanosuit/nanosuit.obj");

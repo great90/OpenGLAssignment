@@ -5,6 +5,7 @@
 #include "glad/glad.h"
 #include "engine/engine.h"
 #include "texture.h"
+#include "material.h"
 #include "graphic_api.h"
 
 Mesh::Mesh(VertexFormat vertex_format, const void* vertices_data, size_t vertices_count, std::vector<unsigned int> indices, Material* material)

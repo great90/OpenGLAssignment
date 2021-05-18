@@ -20,6 +20,32 @@ enum class DepthTestFunc : unsigned int
 	GEQUAL,		// 在片段深度值大于等于缓冲区的深度值时通过测试
 };
 
+enum class AlphaBlendFactor : unsigned int
+{
+	ZERO,
+	ONE,
+	SRC_COLOR,
+	ONE_MINUS_SRC_COLOR,
+	DST_COLOR,
+	ONE_MINUS_DST_COLOR,
+	SRC_ALPHA,
+	ONE_MINUS_SRC_ALPHA,
+	DST_ALPHA,
+	ONE_MINUS_DST_ALPHA,
+	CONSTANT_COLOR,
+	ONE_MINUS_CONSTANT_COLOR,
+	CONSTANT_ALPHA,
+	ONE_MINUS_CONSTANT_ALPHA,
+};
+
+enum class CullFaceType : unsigned int
+{
+	NONE,
+	FRONT,
+	BACK,
+	ALL,
+};
+
 class Material
 {
 	friend class MaterialManager;
@@ -63,15 +89,33 @@ public:
 	const std::vector<Texture*>& get_specular_textures() const { return _specular_textures; }
 	const std::vector<Texture*>& get_normal_textures() const { return _normal_textures; }
 	const std::vector<Texture*>& get_height_textures() const { return _height_textures; }
+
 	void set_enable_depth_test(bool enable) { _enable_depth_test = enable; }
 	bool is_enable_depth_test() const { return _enable_depth_test; }
+	
+	void set_translucence(bool translucence) { _translucence = translucence; }
+	bool is_translucence() const { return _translucence; }
 	void set_update_depth_value(bool update) { _update_depth_value = update; }
 	bool is_update_depth_value() const { return _update_depth_value; }
 	void set_depth_test_func(DepthTestFunc func) { _depth_test_func = func; }
 	DepthTestFunc get_depth_test_func() const { return _depth_test_func; }
 
-	void set_cull_back_faces(bool cull) { _cull_back_faces = cull; }
-	bool is_cull_back_faces() const { return _cull_back_faces; }
+	void set_enable_alpha_blend(bool enable) { _enable_alpha_blend = enable; }
+	bool is_enable_alpha_blend() const { return _enable_alpha_blend; }
+	void set_alpha_blend_factor(AlphaBlendFactor src_factor, AlphaBlendFactor dst_factor)
+	{
+		_blend_src_factor = src_factor;
+		_blend_dst_factor = dst_factor;
+	}
+	void set_alpha_blend_src_factor(AlphaBlendFactor factor) { _blend_src_factor = factor; }
+	AlphaBlendFactor get_alpha_blend_src_factor() const { return _blend_src_factor; }
+	void set_alpha_blend_dst_factor(AlphaBlendFactor factor) { _blend_dst_factor = factor; }
+	AlphaBlendFactor get_alpha_blend_dst_factor() const { return _blend_dst_factor; }
+
+	void set_cull_face_type(CullFaceType type) { _cull_face_type = type; }
+	CullFaceType get_cull_face_type() const { return _cull_face_type; }
+	void set_clockwise_winding_order(bool clockwise) { _clockwise_winding_order = clockwise; }
+	bool get_clockwise_winding_order() const { return _clockwise_winding_order; }
 
 	void active(const Matrix4& model) const;
 	void deactive() const;
@@ -101,8 +145,15 @@ private:
 	std::vector<Texture*> _height_textures{ };
 	float _specular_shininess{ 64.0f };
 
+	bool _translucence{ false };
 	bool _enable_depth_test{ true };
 	bool _update_depth_value{ true };
 	DepthTestFunc _depth_test_func{ DepthTestFunc::LESS };
-	bool _cull_back_faces{ true };
+
+	bool _enable_alpha_blend{ true };
+	AlphaBlendFactor _blend_src_factor{ AlphaBlendFactor::SRC_ALPHA };
+	AlphaBlendFactor _blend_dst_factor{ AlphaBlendFactor::ONE_MINUS_SRC_ALPHA };
+
+	CullFaceType _cull_face_type{ CullFaceType::BACK };
+	bool _clockwise_winding_order{ false };
 };
